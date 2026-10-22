@@ -35,7 +35,7 @@ jobs:
           SUBARCH: arm64
         run: |
           make alioth_defconfig
-          make -j$(nproc) LLVM=1 LLVM_IAS=1
+          make -j2 LLVM=1 LLVM_IAS=1
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
