@@ -17,17 +17,10 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install dependencies
+      - name: Install dependencies and clang
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
-
-      - name: Download AOSP Clang r563880c (LineageOS official)
-        run: |
-          wget -q https://github.com/LineageOS/android_prebuilts_clang_kernel/archive/refs/heads/lineage-23.1_r563880c.tar.gz
-          tar -xf lineage-23.1_r563880c.tar.gz
-          mv android_prebuilts_clang_kernel-lineage-23.1_r563880c clang
-          echo "CLANG_PATH=$PWD/clang/bin" >> $GITHUB_ENV
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip clang lld llvm
 
       - name: Merge alioth defconfig
         run: |
@@ -38,7 +31,6 @@ jobs:
 
       - name: Build kernel
         env:
-          PATH: ${{ env.CLANG_PATH }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           ARCH: arm64
           SUBARCH: arm64
         run: |
