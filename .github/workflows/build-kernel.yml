@@ -1,0 +1,55 @@
+name: Build K40 ReSukiSU Kernel
+on:
+  workflow_dispatch:
+    inputs:
+      defconfig:
+        description: "Device defconfig"
+        default: "alioth"
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout kernel source
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+          submodules: recursive
+
+      - name: Install dependencies
+        run: |
+          sudo apt update
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
+
+      - name: Download AOSP Clang r563880c
+        run: |
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/r563880c.tar.gz
+          mkdir -p clang
+          tar -xf r563880c.tar.gz -C clang
+          echo "CLANG_PATH=$PWD/clang/bin" >> $GITHUB_ENV
+
+      - name: Merge alioth defconfig
+        run: |
+          cat arch/arm64/configs/vendor/kona_defconfig \
+              arch/arm64/configs/vendor/xiaomi/sm8250-common.config \
+              arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
+          echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
+
+      - name: Build kernel
+        env:
+          PATH: ${{ env.CLANG_PATH }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+          ARCH: arm64
+          SUBARCH: arm64
+        run: |
+          make alioth_defconfig
+          make -j$(nproc) LLVM=1 LLVM_IAS=1
+
+      - name: Upload kernel artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: K40-ReSukiSU-Kernel
+          path: |
+            arch/arm64/boot/Image.gz
+            arch/arm64/boot/Image
+          retention-days: 7
