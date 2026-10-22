@@ -17,11 +17,11 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install dependencies and old clang 15
+      - name: Install dependencies and clang 16
         run: |
           sudo apt update
           sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
-          sudo apt install -y clang-15 lld-15
+          sudo apt install -y clang-16 lld-16
 
       - name: Merge alioth defconfig
         run: |
@@ -34,8 +34,8 @@ jobs:
         env:
           ARCH: arm64
           SUBARCH: arm64
-          CC: clang-15
-          LD: lld-15
+          CC: clang-16
+          LD: lld-16
         run: |
           make alioth_defconfig
           make -j2 LLVM=1 LLVM_IAS=1
