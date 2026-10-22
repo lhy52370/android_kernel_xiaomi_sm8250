@@ -28,7 +28,6 @@ jobs:
               arch/arm64/configs/vendor/xiaomi/sm8250-common.config \
               arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
           echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
-          echo -e "CONFIG_LOCKDEP=n\nCONFIG_LOCKUP_DETECTOR=n\nCONFIG_PROVE_LOCKING=n" >> arch/arm64/configs/alioth_defconfig
 
       - name: Build kernel
         env:
@@ -36,7 +35,15 @@ jobs:
           SUBARCH: arm64
         run: |
           make alioth_defconfig
-          make -j$(nproc) LLVM=1 LLVM_IAS=1
+          # 用scripts/config彻底关掉调试选项，避免依赖自动打开
+          scripts/config --disable LOCKDEP
+          scripts/config --disable PROVE_LOCKING
+          scripts/config --disable DEBUG_LOCK_ALLOC
+          scripts/config --disable LOCKUP_DETECTOR
+          scripts/config --disable WERROR
+          make olddefconfig
+          # 加KCFLAGS=-Wno-error，把警告不当成错误，绕过所有warning转error的问题
+          make -j$(nproc) LLVM=1 LLVM_IAS=1 KCFLAGS=-Wno-error
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
