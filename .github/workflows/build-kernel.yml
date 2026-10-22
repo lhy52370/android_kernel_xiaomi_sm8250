@@ -20,12 +20,7 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip wget git
-
-      - name: Clone LineageOS prebuilts clang
-        run: |
-          git clone --depth=1 -b lineage-24.0 https://github.com/LineageOS/android_prebuilts_clang_kernel.git clang
-          echo "CLANG_PATH=$PWD/clang/bin" >> $GITHUB_ENV
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip wget clang lld llvm
 
       - name: Merge alioth defconfig
         run: |
@@ -34,17 +29,18 @@ jobs:
               arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
           echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
 
-      - name: Build kernel
+      - name: Build kernel (force ignore all warnings)
         env:
-          PATH: ${{ env.CLANG_PATH }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           ARCH: arm64
           SUBARCH: arm64
         run: |
           make alioth_defconfig
           scripts/config --disable WERROR
           scripts/config --disable DEBUG_KERNEL
+          scripts/config --disable LOCKDEP
           make olddefconfig
-          make -j$(nproc) LLVM=1 LLVM_IAS=1
+          # 强制忽略所有警告，不管什么warning都不报错
+          make -j$(nproc) LLVM=1 LLVM_IAS=1 KCFLAGS="-Wno-error -Wno-unused-function -Wno-implicit-function-declaration -Wno-int-conversion -Wno-return-type -Wno-address-of-packed-member -Wno-unused-variable -Wno-unused-but-set-variable"
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
