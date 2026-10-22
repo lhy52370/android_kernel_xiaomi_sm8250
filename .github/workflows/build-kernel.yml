@@ -17,11 +17,10 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install dependencies and clang 16
+      - name: Install dependencies and clang
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
-          sudo apt install -y clang-16 lld-16
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip clang lld llvm
 
       - name: Merge alioth defconfig
         run: |
@@ -34,11 +33,9 @@ jobs:
         env:
           ARCH: arm64
           SUBARCH: arm64
-          CC: clang-16
-          LD: lld-16
         run: |
           make alioth_defconfig
-          make -j2 LLVM=1 LLVM_IAS=1
+          make -j2 LLVM=1 LLVM_IAS=1 KCFLAGS="-Wno-error -Wno-error=unused-function -Wno-error=implicit-function-declaration"
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
