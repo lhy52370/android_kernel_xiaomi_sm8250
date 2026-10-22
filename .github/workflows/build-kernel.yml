@@ -22,9 +22,10 @@ jobs:
           sudo apt update
           sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip wget clang lld llvm
 
-      - name: Merge alioth defconfig
+      - name: Merge alioth defconfig (use GKI base)
         run: |
-          cat arch/arm64/configs/vendor/kona_defconfig \
+          # GKI基础配置 + 小米平台配置 + 设备配置
+          cat arch/arm64/configs/gki_defconfig \
               arch/arm64/configs/vendor/xiaomi/sm8250-common.config \
               arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
           echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
@@ -35,14 +36,15 @@ jobs:
           SUBARCH: arm64
         run: |
           make alioth_defconfig
-          # 用scripts/config彻底关掉调试选项，避免依赖自动打开
+          # 彻底关掉调试和Werror
           scripts/config --disable LOCKDEP
           scripts/config --disable PROVE_LOCKING
           scripts/config --disable DEBUG_LOCK_ALLOC
           scripts/config --disable LOCKUP_DETECTOR
           scripts/config --disable WERROR
+          scripts/config --disable CPU_DEBUG
+          scripts/config --disable DEBUG_KERNEL
           make olddefconfig
-          # 加KCFLAGS=-Wno-error，把警告不当成错误，绕过所有warning转error的问题
           make -j$(nproc) LLVM=1 LLVM_IAS=1 KCFLAGS=-Wno-error
 
       - name: Upload kernel artifact
