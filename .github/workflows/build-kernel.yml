@@ -17,10 +17,11 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install dependencies and clang
+      - name: Install dependencies and old clang 15
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip clang lld llvm
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
+          sudo apt install -y clang-15 lld-15
 
       - name: Merge alioth defconfig
         run: |
@@ -33,9 +34,11 @@ jobs:
         env:
           ARCH: arm64
           SUBARCH: arm64
+          CC: clang-15
+          LD: lld-15
         run: |
           make alioth_defconfig
-          make -j2 LLVM=1 LLVM_IAS=1 KCFLAGS="-Wno-error"
+          make -j2 LLVM=1 LLVM_IAS=1
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
