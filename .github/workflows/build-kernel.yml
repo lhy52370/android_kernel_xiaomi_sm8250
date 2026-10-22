@@ -20,13 +20,13 @@ jobs:
       - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip wget
 
-      - name: Download AOSP Clang r563880c
+      - name: Download Clang r522817 from GitHub mirror
         run: |
-          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/r563880c.tar.gz
+          wget -q https://github.com/LineageOS/android_prebuilts_clang_kernel/releases/download/r522817/clang-r522817-linux-x86.tar.gz
           mkdir -p clang
-          tar -xf r563880c.tar.gz -C clang
+          tar -xf clang-r522817-linux-x86.tar.gz -C clang --strip-components=1
           echo "CLANG_PATH=$PWD/clang/bin" >> $GITHUB_ENV
 
       - name: Merge alioth defconfig
@@ -35,7 +35,6 @@ jobs:
               arch/arm64/configs/vendor/xiaomi/sm8250-common.config \
               arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
           echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
-          # 关掉调试选项绕过lockdep编译错误
           echo -e "CONFIG_LOCKDEP=n\nCONFIG_LOCKUP_DETECTOR=n\nCONFIG_PROVE_LOCKING=n" >> arch/arm64/configs/alioth_defconfig
 
       - name: Build kernel
