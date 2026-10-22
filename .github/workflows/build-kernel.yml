@@ -17,10 +17,17 @@ jobs:
           fetch-depth: 1
           submodules: recursive
 
-      - name: Install dependencies and clang
+      - name: Install dependencies
         run: |
           sudo apt update
-          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip clang lld llvm
+          sudo apt install -y build-essential libssl-dev bc bison flex libelf-dev zip
+
+      - name: Download AOSP Clang r563880c
+        run: |
+          wget -q https://android.googlesource.com/platform/prebuilts/clang/host/linux-x86/+archive/refs/tags/r563880c.tar.gz
+          mkdir -p clang
+          tar -xf r563880c.tar.gz -C clang
+          echo "CLANG_PATH=$PWD/clang/bin" >> $GITHUB_ENV
 
       - name: Merge alioth defconfig
         run: |
@@ -28,14 +35,17 @@ jobs:
               arch/arm64/configs/vendor/xiaomi/sm8250-common.config \
               arch/arm64/configs/vendor/xiaomi/alioth.config > arch/arm64/configs/alioth_defconfig
           echo -e "\n# ReSukiSU\nCONFIG_KSU=y\nCONFIG_KSU_MANUAL_HOOK=y" >> arch/arm64/configs/alioth_defconfig
+          # 关掉调试选项绕过lockdep编译错误
+          echo -e "CONFIG_LOCKDEP=n\nCONFIG_LOCKUP_DETECTOR=n\nCONFIG_PROVE_LOCKING=n" >> arch/arm64/configs/alioth_defconfig
 
       - name: Build kernel
         env:
+          PATH: ${{ env.CLANG_PATH }}:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
           ARCH: arm64
           SUBARCH: arm64
         run: |
           make alioth_defconfig
-          make -j2 LLVM=1 LLVM_IAS=1 KCFLAGS="-Wno-error -Wno-error=unused-function -Wno-error=implicit-function-declaration"
+          make -j$(nproc) LLVM=1 LLVM_IAS=1
 
       - name: Upload kernel artifact
         uses: actions/upload-artifact@v4
